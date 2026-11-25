@@ -1,3 +1,4 @@
+import { evaluateRetrieval } from './retrieval';
 import type { LabeledTicket } from './dataset';
 import { evaluate, type EvalProvider } from './evaluate';
 import { renderReport } from './report';
@@ -11,9 +12,9 @@ const provider: EvalProvider = {
 };
 
 const tickets: LabeledTicket[] = [
-  { id: 't1', subject: 's', body: 'b', category: 'bug', priority: 'high' },
-  { id: 't2', subject: 's', body: 'b', category: 'billing', priority: 'low' },
-  { id: 't3', subject: 's', body: 'b', category: 'account', priority: 'medium' },
+  { id: 't1', subject: 's', body: 'b', category: 'bug', priority: 'high', article: 'a' },
+  { id: 't2', subject: 's', body: 'b', category: 'billing', priority: 'low', article: 'a' },
+  { id: 't3', subject: 's', body: 'b', category: 'account', priority: 'medium', article: 'a' },
 ];
 
 describe('evaluate', () => {
@@ -158,5 +159,64 @@ describe('availability', () => {
     expect(checkAnthropic({ ANTHROPIC_API_KEY: 'k' }).available).toBe(true);
     expect(checkFake({}).available).toBe(false);
     expect(checkFake({ EVAL_INCLUDE_FAKE: '1' }).available).toBe(true);
+  });
+});
+
+describe('evaluateRetrieval (AC-E7)', () => {
+  const art = (id: string) => ({ id, title: id, text: id });
+  const ts: LabeledTicket[] = [
+    { id: 't1', subject: 'a', body: 'b', category: 'bug', priority: 'high', article: 'x' },
+    { id: 't2', subject: 'a', body: 'b', category: 'bug', priority: 'high', article: 'y' },
+    { id: 't3', subject: 'a', body: 'b', category: 'bug', priority: 'high', article: 'z' },
+    { id: 't4', subject: 'a', body: 'b', category: 'bug', priority: 'high', article: 'x' },
+  ];
+
+  it('counts a hit when the expected article is anywhere in the top 3', async () => {
+    const answers = [['x'], ['q', 'r', 'y'], ['q'], []];
+    let i = 0;
+    const r = await evaluateRetrieval(
+      'keyword',
+      async () => ({ articles: (answers[i++] ?? []).map(art), mode: 'keyword' as const }),
+      ts,
+    );
+    expect(r.hits).toBe(2);
+    expect(r.total).toBe(4);
+    expect(r.hitRate).toBe(0.5);
+    expect(r.misses.map((m) => m.id)).toEqual(['t3', 't4']);
+    expect(r.misses[0]).toEqual({ id: 't3', expected: 'z', got: ['q'] });
+  });
+
+  it('counts tickets that fell back to keyword in embedding mode', async () => {
+    const r = await evaluateRetrieval(
+      'embedding',
+      async () => ({ articles: [art('x')], mode: 'keyword' as const }),
+      ts.slice(0, 1),
+    );
+    expect(r.fallbacks).toBe(1);
+  });
+
+  it('reports retrieval rows and skipped modes without numbers (AC-E5, AC-E7)', () => {
+    const md = renderReport({
+      date: new Date('2026-01-01T00:00:00Z'),
+      datasetSize: 4,
+      evaluations: [],
+      skipped: [],
+      retrieval: [
+        {
+          mode: 'keyword',
+          total: 4,
+          hits: 2,
+          hitRate: 0.5,
+          avgLatencyMs: 1.2,
+          fallbacks: 0,
+          misses: [],
+        },
+      ],
+      retrievalSkipped: [{ id: 'embedding', reason: 'embedding model unavailable' }],
+      providerRetrieval: 'keyword',
+    });
+    expect(md).toContain('| keyword | 50.0% | 2/4 | 1 |  |');
+    expect(md).toContain('| embedding | skipped: embedding model unavailable | - | - | |');
+    expect(md).toContain('Retrieval used by provider runs: keyword');
   });
 });

@@ -1,5 +1,6 @@
 import { CATEGORIES, PRIORITIES } from '../src/contracts';
 import { detectPii } from '../src/pii/pii';
+import { loadKnowledgeBase } from '../src/retrieval/kb';
 import { loadDataset, parseDataset } from './dataset';
 
 describe('dataset.jsonl (AC-E1, AC-E2)', () => {
@@ -45,6 +46,13 @@ describe('dataset.jsonl (AC-E1, AC-E2)', () => {
     expect(withPii.length).toBeGreaterThanOrEqual(5);
   });
 
+  it('AC-E1 names an expected article that exists in kb/, and every article is used', () => {
+    const ids = new Set(loadKnowledgeBase().map((a) => a.id));
+    for (const t of tickets)
+      expect({ id: t.id, ok: ids.has(t.article) }).toEqual({ id: t.id, ok: true });
+    expect(new Set(tickets.map((t) => t.article))).toEqual(ids);
+  });
+
   it('keeps bodies short (1-4 sentences)', () => {
     for (const t of tickets) {
       const sentences = t.body.split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -58,9 +66,13 @@ describe('parseDataset', () => {
   it('rejects invalid JSON, bad labels and duplicate ids', () => {
     expect(() => parseDataset('nope')).toThrow(/line 1: invalid JSON/);
     expect(() =>
-      parseDataset('{"id":"a","subject":"s","body":"b","category":"x","priority":"low"}'),
+      parseDataset(
+        '{"id":"a","subject":"s","body":"b","category":"x","priority":"low","article":"k"}',
+      ),
     ).toThrow(/line 1/);
-    const row = '{"id":"a","subject":"s","body":"b","category":"bug","priority":"low"}';
+    const row =
+      '{"id":"a","subject":"s","body":"b","category":"bug","priority":"low","article":"k"}';
+    expect(() => parseDataset(row.replace(',"article":"k"', ''))).toThrow(/line 1/);
     expect(() => parseDataset(`${row}\n${row}`)).toThrow(/duplicate/);
   });
 });
