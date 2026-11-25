@@ -6,7 +6,7 @@ Vocabulary: **PII** = personal data as defined in AC-P*. **Local** = Ollama prov
 
 ## API — `POST /triage` (F1, F6)
 
-- **AC-A1** Given a valid body `{subject, body}` and the fake provider, the response is `200` with exactly the fields `category`, `priority`, `draft_reply`, `model`, `latency_ms`, `provider`, `route_reason`.
+- **AC-A1** Given a valid body `{subject, body}` and the fake provider, the response is `200` with exactly the fields `category`, `priority`, `draft_reply`, `model`, `latency_ms`, `provider`, `route_reason`, `sources`, `retrieval`.
 - **AC-A2** `category` is one of `billing|bug|feature_request|account|other`; `priority` is one of `low|medium|high`; `draft_reply` is a non-empty string; `latency_ms` is a non-negative number.
 - **AC-A3** A missing, non-string or empty `subject` or `body` returns `400`. `subject` longer than 200 characters or `body` longer than 5000 characters returns `400`.
 - **AC-A4** `GET /docs` returns an HTML page and `GET /docs-json` returns an OpenAPI 3 document that describes `POST /triage`.
@@ -38,19 +38,32 @@ Vocabulary: **PII** = personal data as defined in AC-P*. **Local** = Ollama prov
 
 ## Evaluation (F8, F9)
 
-- **AC-E1** `eval/dataset.jsonl` has exactly 40 lines; each is JSON with `id`, `subject`, `body`, `category`, `priority`; all five categories and all three priorities appear; at least 4 tickets contain PII according to `detectPii`.
+- **AC-E1** `eval/dataset.jsonl` has exactly 40 lines; each is JSON with `id`, `subject`, `body`, `category`, `priority`, `article` (the id of the expected knowledge-base article, which must exist in `kb/`); all five categories and all three priorities appear; at least 4 tickets contain PII according to `detectPii`.
 - **AC-E2** Dataset tickets are synthetic: all email addresses use `example.com`/`example.org`, phone numbers use fictional ranges, and card numbers are well-known test numbers.
 - **AC-E3** Accuracy is `correct / total` per field, computed separately for category and priority.
 - **AC-E4** Cost per 1,000 tickets is `(avg input tokens × input price + avg output tokens × output price) × 1000 / 1e6`; local providers cost 0. Prices come from named constants.
 - **AC-E5** `npm run eval` runs every available provider (Ollama if reachable, Anthropic if a key is set), prints a table, and writes `eval/results.md`. A provider that is unavailable is reported as skipped with a reason and never given numbers.
+- **AC-E7** Top-3 hit rate is `tickets whose expected article is among the 3 retrieved ÷ total tickets`. It is computed for each retrieval mode that is available (embedding if the embedding model is reachable, keyword always), reported in `eval/results.md` with the mode name, and a mode that cannot run is reported as skipped.
+- **AC-E8** Provider runs in the eval use the same retrieval as the API, so their accuracy figures include the retrieved context.
 - **AC-E6** A ticket that fails validation (502-equivalent) counts as incorrect for both fields and is counted in an `errors` column.
 
 ## MCP server (F10)
 
-- **AC-M1** The server speaks MCP over stdio and lists exactly one tool, `find_similar_tickets`, with a `query` string parameter.
-- **AC-M2** The tool returns at most 3 tickets, ranked by the number of distinct query keywords found as whole words in subject and body (lowercased; one-letter words and common stop-words are not keywords); ties break by dataset order. Each result has `id`, `subject`, `body`, `category`, `priority`.
-- **AC-M3** A query with no matching keyword returns an empty list, not an error. An empty query returns an error result.
-- **AC-M4** The server is read-only: it never writes files or calls the network.
+- **AC-M1** The server speaks MCP over stdio and lists exactly one tool, `search_knowledge_base`, with a `query` string parameter.
+- **AC-M2** The tool uses the same retrieval as the API and returns at most 3 articles ranked by relevance, each with `id`, `title` and `text`, plus the `retrieval` mode used (`embedding` or `keyword`).
+- **AC-M3** A query with no relevant article returns an empty list, not an error (keyword mode); an empty query returns an error result.
+- **AC-M4** The server is read-only: it never writes files. Its only network access is the local Ollama embedding endpoint; if that is unreachable it falls back to keyword search.
+
+## Retrieval (F17-F20)
+
+- **AC-K1** `kb/` contains 15 to 20 Markdown articles; each starts with a `# Title` line; the text is synthetic (no real names, companies or data).
+- **AC-K2** `cosineSimilarity(a, b)` returns 1 for identical non-zero vectors, 0 for orthogonal vectors, -1 for opposite vectors, 0 when either vector is all zeros (never `NaN`), and throws when the lengths differ.
+- **AC-K3** With an embedder, retrieval returns the 3 articles whose vectors have the highest cosine similarity to the query vector, best first, and reports `retrieval: "embedding"`. Tested with precomputed fixture vectors, no model.
+- **AC-K4** At startup the service embeds every article with the configured Ollama embedding model (`EMBEDDING_MODEL`, default `nomic-embed-text`) and keeps the vectors in memory.
+- **AC-K5** If the embedding model is unavailable (index not built, or the query cannot be embedded), retrieval uses keyword search and reports `retrieval: "keyword"`, and the request still succeeds. Keyword search scores an article by the number of distinct query words found as whole words in its title and text (lowercased; one-letter words and common stop-words ignored); it returns at most 3 articles with a score above 0, ties broken by article order. If the index was not built at startup, a later request tries to build it again.
+- **AC-K6** The title and text of the retrieved articles are included in the prompt sent to the model, before the ticket.
+- **AC-K7** The response has `sources` (titles of the retrieved articles, best first, at most 3) and `retrieval` (`"embedding"` or `"keyword"`). When the fake provider is selected, retrieval uses keyword search.
+- **AC-K8** Ticket text is embedded only by the local model, never sent to a hosted service for retrieval, and is not logged.
 
 ## Observability (F11, F12)
 
@@ -62,7 +75,7 @@ Vocabulary: **PII** = personal data as defined in AC-P*. **Local** = Ollama prov
 ## Web UI (F13, F14, F15)
 
 - **AC-W1** The page has a form with labelled `Subject` and `Body` fields and at least three one-click example tickets, one of which contains personal data.
-- **AC-W2** Submitting calls `POST {NEXT_PUBLIC_API_URL}/triage` and renders a result card with category badge, priority badge, draft reply, model name, route reason and latency.
+- **AC-W2** Submitting calls `POST {NEXT_PUBLIC_API_URL}/triage` and renders a result card with category badge, priority badge, draft reply, model name, route reason, latency, and the list of source article titles with the retrieval mode.
 - **AC-W3** The draft reply has a copy button that copies its text to the clipboard.
 - **AC-W4** Before the first submission the result area shows an empty state; while waiting it shows a loading state; on an API error it shows an error message with the form content preserved.
 - **AC-W5** The last five results are listed in a history section, held in memory only (a reload clears it).
