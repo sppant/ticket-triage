@@ -1,6 +1,6 @@
 import { Body, Controller, Logger, Module, Post, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace';
 import type { NodeSDK } from '@opentelemetry/sdk-node';
 import { Writable } from 'node:stream';
 import request from 'supertest';
@@ -53,7 +53,7 @@ describe('logging and spans never contain ticket content (AC-O4)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    sdk = createTracingSdk({}, [new SimpleSpanProcessor(exporter)]);
+    sdk = createTracingSdk({}, [new SimpleSpanProcessor({ exporter })]);
     sdk.start();
 
     // Same wiring as ObservabilityModule, but with a capturing log destination.

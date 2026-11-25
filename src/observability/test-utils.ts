@@ -1,4 +1,4 @@
-import type { InMemorySpanExporter, ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import type { InMemorySpanExporter, ReadableSpan } from '@opentelemetry/sdk-trace';
 
 /**
  * Span export is asynchronous (the SDK waits for resource detection), so tests poll the

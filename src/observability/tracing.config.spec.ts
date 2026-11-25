@@ -1,4 +1,4 @@
-import { BatchSpanProcessor, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { BatchSpanProcessor, SimpleSpanProcessor } from '@opentelemetry/sdk-trace';
 import { createSpanProcessor, createTracingConfig } from './tracing.config';
 
 describe('tracing config (AC-O3)', () => {

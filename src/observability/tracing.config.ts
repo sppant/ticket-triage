@@ -5,7 +5,7 @@ import {
   ConsoleSpanExporter,
   SimpleSpanProcessor,
   type SpanProcessor,
-} from '@opentelemetry/sdk-trace-base';
+} from '@opentelemetry/sdk-trace';
 
 export type TracingEnv = Record<string, string | undefined>;
 
@@ -32,8 +32,8 @@ export function createTracingConfig(env: TracingEnv): TracingConfig {
  */
 export function createSpanProcessor(config: TracingConfig): SpanProcessor {
   return config.exporter === 'otlp'
-    ? new BatchSpanProcessor(new OTLPTraceExporter())
-    : new SimpleSpanProcessor(new ConsoleSpanExporter());
+    ? new BatchSpanProcessor({ exporter: new OTLPTraceExporter() })
+    : new SimpleSpanProcessor({ exporter: new ConsoleSpanExporter() });
 }
 
 /** Creates the SDK without starting it. `spanProcessors` can be overridden in tests. */

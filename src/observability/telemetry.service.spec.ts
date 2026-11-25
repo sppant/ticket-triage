@@ -1,6 +1,6 @@
 import { SpanStatusCode } from '@opentelemetry/api';
 import type { NodeSDK } from '@opentelemetry/sdk-node';
-import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace';
 import { createTracingSdk } from './tracing.config';
 import { TelemetryService } from './telemetry.service';
 import { waitForSpans } from './test-utils';
@@ -11,7 +11,7 @@ describe('TelemetryService', () => {
   const telemetry = new TelemetryService();
 
   beforeAll(() => {
-    sdk = createTracingSdk({}, [new SimpleSpanProcessor(exporter)]);
+    sdk = createTracingSdk({}, [new SimpleSpanProcessor({ exporter })]);
     sdk.start();
   });
   afterAll(async () => {
