@@ -59,6 +59,10 @@ function parseOutput(text: string): ModelOutput | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
+function addOptional(total: number | undefined, n: number | undefined): number | undefined {
+  return n === undefined ? total : (total ?? 0) + n;
+}
+
 export interface TriageRun {
   output: ModelOutput;
   completion: CompletionResult;
@@ -68,10 +72,16 @@ export interface TriageRun {
 /** Calls the provider, validates the output, retries exactly once on invalid output (AC-V2). */
 export async function runTriage(provider: ModelProvider, ticket: Ticket): Promise<TriageRun> {
   const request = buildPrompt(ticket);
+  let inputTokens: number | undefined;
+  let outputTokens: number | undefined;
   for (const attempts of [1, 2] as const) {
     const completion = await provider.complete(request);
+    // Token usage covers every attempt, so cost estimates include the retry.
+    inputTokens = addOptional(inputTokens, completion.inputTokens);
+    outputTokens = addOptional(outputTokens, completion.outputTokens);
     const output = parseOutput(completion.text);
-    if (output) return { output, completion, attempts };
+    if (output)
+      return { output, completion: { ...completion, inputTokens, outputTokens }, attempts };
   }
   throw new InvalidModelOutputError();
 }

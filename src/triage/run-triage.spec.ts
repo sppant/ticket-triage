@@ -20,6 +20,22 @@ describe('runTriage', () => {
     expect(p.complete.mock.calls[0][0].user).toContain('SENTINEL-BODY');
   });
 
+  it('sums token usage over the retry so cost estimates include it', async () => {
+    const complete = jest
+      .fn()
+      .mockResolvedValueOnce({ text: 'nope', model: 'm', inputTokens: 100, outputTokens: 10 })
+      .mockResolvedValueOnce({
+        text: JSON.stringify(valid),
+        model: 'm',
+        inputTokens: 100,
+        outputTokens: 30,
+      });
+    const r = await runTriage({ id: 'fake', model: 'm', complete }, ticket);
+    expect(r.attempts).toBe(2);
+    expect(r.completion.inputTokens).toBe(200);
+    expect(r.completion.outputTokens).toBe(40);
+  });
+
   it('AC-V4 accepts output in a markdown code fence', async () => {
     const r = await runTriage(provider(['```json\n' + JSON.stringify(valid) + '\n```']), ticket);
     expect(r.output).toEqual(valid);
