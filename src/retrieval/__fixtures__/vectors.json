@@ -1,0 +1,27 @@
+{
+  "articles": [
+    {
+      "id": "a-billing",
+      "title": "Billing",
+      "text": "refund invoice charge payment",
+      "vector": [1, 0, 0]
+    },
+    { "id": "a-bugs", "title": "Bugs", "text": "crash error broken export", "vector": [0, 1, 0] },
+    {
+      "id": "a-account",
+      "title": "Account",
+      "text": "password login locked email",
+      "vector": [0, 0, 1]
+    },
+    {
+      "id": "a-mixed",
+      "title": "Mixed",
+      "text": "general question about plans",
+      "vector": [0.6, 0.6, 0.2]
+    }
+  ],
+  "queries": {
+    "billing": { "text": "I was charged twice", "vector": [0.9, 0.1, 0] },
+    "account": { "text": "cannot sign in", "vector": [0.1, 0.1, 0.95] }
+  }
+}
