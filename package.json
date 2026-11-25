@@ -8,9 +8,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "nest build",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
-    "start:dev": "nest start --watch",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -42,7 +41,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@nestjs/cli": "^11.0.24",
     "@nestjs/testing": "^11.2.12",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
