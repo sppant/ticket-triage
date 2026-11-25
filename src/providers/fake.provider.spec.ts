@@ -37,4 +37,13 @@ describe('FakeProvider', () => {
     const { out } = await run('Hi', 'hello there');
     expect(out.category).toBe('other');
   });
+
+  it('AC-K6 mentions the first retrieved article, and only that article', async () => {
+    const user =
+      '[1] Refund policy\ntext\n\n[2] Invoices\ntext\n\nTicket:\nSubject: s\nBody: b\nAnswer:';
+    const r = await new FakeProvider().complete({ system: 's', user });
+    expect(JSON.parse(r.text).draft_reply).toContain('See: Refund policy.');
+    const none = await new FakeProvider().complete({ system: 's', user: 'Ticket:\nBody: b' });
+    expect(JSON.parse(none.text).draft_reply).not.toContain('See:');
+  });
 });

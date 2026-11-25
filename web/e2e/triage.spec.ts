@@ -16,6 +16,8 @@ test('triages an example ticket and renders the result card', async ({ page }) =
   await expect(card.getByTestId('draft-reply')).not.toBeEmpty();
   await expect(card.getByTestId('model')).not.toBeEmpty();
   await expect(card.getByTestId('route-reason')).not.toBeEmpty();
+  await expect(card.getByTestId('sources')).toContainText('Duplicate charges and failed payments');
+  await expect(card.getByTestId('retrieval')).toHaveText('Keyword search');
   await expect(card.getByTestId('latency')).toHaveText(/\d+(\.\d)? (ms|s)/);
 
   await expect(page.getByRole('region', { name: 'Recent triages' })).toContainText('Charged twice');

@@ -1,5 +1,5 @@
 import type { CompletionResult, ModelProvider } from '../contracts';
-import { InvalidModelOutputError, extractJson, runTriage } from './run-triage';
+import { InvalidModelOutputError, buildPrompt, extractJson, runTriage } from './run-triage';
 
 const ticket = { subject: 'SENTINEL-SUBJECT', body: 'SENTINEL-BODY' };
 const valid = { category: 'bug', priority: 'high', draft_reply: 'We are on it.' };
@@ -9,6 +9,31 @@ function provider(texts: string[]): ModelProvider & { complete: jest.Mock } {
   texts.forEach((text) => complete.mockResolvedValueOnce({ text, model: 'm' } as CompletionResult));
   return { id: 'fake', model: 'm', complete };
 }
+
+describe('retrieved context in the prompt (AC-K6)', () => {
+  const articles = [
+    { id: 'a', title: 'Refund policy', text: 'Refunds take 5 business days.' },
+    { id: 'b', title: 'Invoices', text: 'Invoices are under Billing.' },
+  ];
+
+  it('puts the title and text of each article before the ticket', () => {
+    const { user } = buildPrompt(ticket, articles);
+    expect(user).toContain('[1] Refund policy\nRefunds take 5 business days.');
+    expect(user).toContain('[2] Invoices\nInvoices are under Billing.');
+    expect(user.indexOf('[1] Refund policy')).toBeLessThan(user.indexOf('Ticket:'));
+  });
+
+  it('adds no context block when nothing was retrieved', () => {
+    expect(buildPrompt(ticket, []).user.startsWith('Ticket:')).toBe(true);
+    expect(buildPrompt(ticket).user).not.toContain('Help-center');
+  });
+
+  it('runTriage sends the context to the provider', async () => {
+    const p = provider([JSON.stringify(valid)]);
+    await runTriage(p, ticket, articles);
+    expect(p.complete.mock.calls[0][0].user).toContain('Refunds take 5 business days.');
+  });
+});
 
 describe('runTriage', () => {
   it('returns validated output on the first attempt', async () => {

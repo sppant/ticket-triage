@@ -31,6 +31,18 @@ export class TriageResponseDto implements TriageResponse {
 
   @ApiProperty({ description: 'Why this provider was chosen' })
   route_reason!: string;
+
+  @ApiProperty({
+    type: [String],
+    description: 'Titles of the help-center articles given to the model, best first (at most 3)',
+  })
+  sources!: string[];
+
+  @ApiProperty({
+    enum: ['embedding', 'keyword'],
+    description: 'How the articles were found: embedding similarity or keyword fallback',
+  })
+  retrieval!: 'embedding' | 'keyword';
 }
 
 export class ErrorDto {

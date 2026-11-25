@@ -14,6 +14,8 @@ export const triageResponseSchema = z.object({
   latency_ms: z.number(),
   provider: z.enum(['ollama', 'anthropic', 'fake']),
   route_reason: z.string(),
+  sources: z.array(z.string()),
+  retrieval: z.enum(['embedding', 'keyword']),
 });
 
 export type TriageResult = z.infer<typeof triageResponseSchema>;

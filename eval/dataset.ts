@@ -9,6 +9,8 @@ export const labeledTicketSchema = z.object({
   body: z.string().min(1),
   category: z.enum(CATEGORIES),
   priority: z.enum(PRIORITIES),
+  /** Id (file name without .md) of the knowledge-base article that should be retrieved. */
+  article: z.string().min(1),
 });
 export type LabeledTicket = z.infer<typeof labeledTicketSchema>;
 

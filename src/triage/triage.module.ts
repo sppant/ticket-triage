@@ -3,6 +3,7 @@ import { loadConfig } from '../config';
 import { AnthropicProvider } from '../providers/anthropic.provider';
 import { FakeProvider } from '../providers/fake.provider';
 import { OllamaProvider } from '../providers/ollama.provider';
+import { RetrievalModule } from '../retrieval/retrieval.module';
 import { Router } from '../router/router';
 import { TriageController } from './triage.controller';
 import { TriageService } from './triage.service';
@@ -12,6 +13,7 @@ export const HOSTED_PROVIDER = Symbol('HOSTED_PROVIDER');
 export const FAKE_PROVIDER = Symbol('FAKE_PROVIDER');
 
 @Module({
+  imports: [RetrievalModule],
   controllers: [TriageController],
   providers: [
     TriageService,

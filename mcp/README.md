@@ -1,33 +1,36 @@
 # ticket-triage MCP server
 
 A small [Model Context Protocol](https://modelcontextprotocol.io) server that lets an MCP
-client (Claude Code, Claude Desktop, ...) look up similar tickets in the labeled dataset.
+client (Claude Code, Claude Desktop, ...) search the help-center articles in `kb/`.
 
 It exposes one tool:
 
-| Tool                   | Input                       | Output                                                                                          |
-| ---------------------- | --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `find_similar_tickets` | `{ "query": "<keywords>" }` | JSON array (text content) of at most 3 tickets: `id`, `subject`, `body`, `category`, `priority` |
+| Tool                    | Input                          | Output                                                                                                                |
+| ----------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `search_knowledge_base` | `{ "query": "<plain words>" }` | JSON text: `{ "retrieval": "embedding" \| "keyword", "results": [{ "id", "title", "text" }] }` with at most 3 results |
 
-Matching is a plain keyword search: the query is lowercased and split into alphanumeric
-words (one-letter words and common stop-words are dropped). A ticket's score is the number of
-distinct query words that appear as whole words in its subject or body. The top 3 tickets
-with a score above 0 are returned, ties broken by dataset order. A query with no matches
-returns `[]`; an empty query returns an MCP error result.
+It uses the same retrieval as the API. At startup it embeds the articles with the local Ollama
+embedding model (`EMBEDDING_MODEL`, default `nomic-embed-text`, at `OLLAMA_BASE_URL`) and ranks
+articles by cosine similarity (`"retrieval": "embedding"`). If Ollama or the model is not
+available it falls back to keyword search (`"retrieval": "keyword"`): the query is split into
+lowercase words (one-letter words and common stop-words dropped) and an article scores one point
+per distinct word found as a whole word in its title or text. A query with no relevant article
+returns an empty `results` list; an empty query returns an MCP error result.
 
-The server is read-only: it reads the dataset file once at startup and never writes files or
-makes network calls. It speaks MCP over stdio, so stdout carries only protocol messages;
+The server is read-only: it never writes files, and its only network access is the local Ollama
+embedding endpoint. It speaks MCP over stdio, so stdout carries only protocol messages;
 diagnostics go to stderr.
 
 ## Run
 
 ```bash
+ollama pull nomic-embed-text   # optional; without it the server uses keyword search
 npm install
 npm run mcp
 ```
 
-The dataset is `eval/dataset.jsonl` in the repository root (resolved relative to the code, not
-the current directory). Set `MCP_DATASET_PATH` to use another JSONL file with the same fields.
+The articles are the Markdown files in `kb/` at the repository root (override the directory
+with `KB_DIR`).
 
 ## Client configuration
 
@@ -52,6 +55,6 @@ Claude Code:
 claude mcp add ticket-triage -- /absolute/path/to/ticket-triage/node_modules/.bin/tsx /absolute/path/to/ticket-triage/mcp/server.ts
 ```
 
-To search a different dataset, add `"env": { "MCP_DATASET_PATH": "/path/to/file.jsonl" }` to
-the JSON config, or `-e MCP_DATASET_PATH=/path/to/file.jsonl` before the `--` in the
+To point at another Ollama host or embedding model, add `"env": { "OLLAMA_BASE_URL": "...",
+"EMBEDDING_MODEL": "..." }` to the JSON config, or `-e NAME=value` before the `--` in the
 `claude mcp add` command.

@@ -1,6 +1,7 @@
 import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
 import type { Ticket, TriageResponse } from '../contracts';
 import { Telemetry } from '../observability/telemetry';
+import { KnowledgeBase } from '../retrieval/retriever';
 import { Router } from '../router/router';
 import { InvalidModelOutputError, runTriage, type TriageRun } from './run-triage';
 
@@ -11,19 +12,22 @@ export class TriageService {
   constructor(
     private readonly router: Router,
     private readonly telemetry: Telemetry,
+    private readonly knowledge: KnowledgeBase,
   ) {}
 
   triage(ticket: Ticket): Promise<TriageResponse> {
     return this.telemetry.span('triage.request', {}, async () => {
       const { provider, reason } = this.router.decide(ticket);
       const started = performance.now();
+      // Retrieval never throws: it falls back to keyword search. Ticket text is not logged.
+      const retrieved = await this.knowledge.retrieve(`${ticket.subject}\n${ticket.body}`);
       let run: TriageRun;
       try {
         run = await this.telemetry.span(
           'model.call',
           { 'llm.provider': provider.id, 'llm.model': provider.model },
           async (span) => {
-            const result = await runTriage(provider, ticket);
+            const result = await runTriage(provider, ticket, retrieved.articles);
             const { inputTokens, outputTokens } = result.completion;
             span.setAttributes({
               'llm.latency_ms': Math.round(performance.now() - started),
@@ -50,6 +54,8 @@ export class TriageService {
         latency_ms: Math.round(performance.now() - started),
         provider: provider.id,
         route_reason: reason,
+        sources: retrieved.articles.map((a) => a.title),
+        retrieval: retrieved.mode,
       };
     });
   }
