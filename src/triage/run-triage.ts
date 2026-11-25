@@ -21,6 +21,7 @@ export const SYSTEM_PROMPT = `You triage customer support tickets.
 Classify the ticket and write a short, polite draft reply to the customer.
 category must be one of: ${CATEGORIES.join(', ')}.
 priority must be one of: ${PRIORITIES.join(', ')}.
+Priority guide: high = the customer is blocked, an outage, data loss, or money was wrongly taken; low = a general question or a nice-to-have with no deadline; medium = everything else.
 Answer ONLY with a JSON object of the form {"category": "...", "priority": "...", "draft_reply": "..."} and nothing else.
 
 Example:
