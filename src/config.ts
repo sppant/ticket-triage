@@ -1,0 +1,19 @@
+export interface AppConfig {
+  triageProvider: string;
+  ollamaBaseUrl: string;
+  ollamaModel: string;
+  anthropicApiKey?: string;
+  anthropicModel: string;
+}
+
+/** Reads configuration from the environment; empty values count as unset. */
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  const get = (key: string): string | undefined => env[key]?.trim() || undefined;
+  return {
+    triageProvider: get('TRIAGE_PROVIDER') ?? '',
+    ollamaBaseUrl: get('OLLAMA_BASE_URL') ?? 'http://localhost:11434',
+    ollamaModel: get('OLLAMA_MODEL') ?? 'llama3.2:1b',
+    anthropicApiKey: get('ANTHROPIC_API_KEY'),
+    anthropicModel: get('ANTHROPIC_MODEL') ?? 'claude-haiku-5-5',
+  };
+}
