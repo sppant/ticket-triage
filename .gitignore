@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+web/.next/
+web/node_modules/
+web/storybook-static/
+web/test-results/
+web/playwright-report/
+.claude/

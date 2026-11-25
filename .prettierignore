@@ -1,0 +1,9 @@
+dist
+coverage
+node_modules
+web/.next
+web/node_modules
+web/storybook-static
+package-lock.json
+web/package-lock.json
+eval/dataset.jsonl
