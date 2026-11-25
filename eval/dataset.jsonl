@@ -34,7 +34,7 @@
 {"id":"t34","subject":"Do you have an office in Berlin?","body":"We will be traveling to Berlin in spring and wondered if you have an office we could visit.","category":"other","priority":"low"}
 {"id":"t35","subject":"Special offer just for you","body":"Click here to win a free prize! Limited time only, act now and claim your reward.","category":"other","priority":"low"}
 {"id":"t36","subject":"Partnership inquiry","body":"I run a small consultancy and would like to discuss a reseller partnership. Please forward this to the right person.","category":"other","priority":"medium"}
-{"id":"t37","subject":"Press contact","body":"I am a journalist writing about workplace tools. Who should I speak to for a short interview?","category":"other","priority":"low"}
+{"id":"t37","subject":"Press contact","body":"I am a journalist writing about workplace tools. Who should I speak to for a short comment?","category":"other","priority":"low"}
 {"id":"t38","subject":"Where can I find your security whitepaper?","body":"Our procurement team asked for your security whitepaper and certifications. Could you point me to them?","category":"other","priority":"medium"}
-{"id":"t39","subject":"Job opportunities","body":"Are you hiring for any engineering roles at the moment? I could not find a careers page.","category":"other","priority":"low"}
+{"id":"t39","subject":"Partner program","body":"Do you have a partner program for agencies? I could not find a page about it on your website.","category":"other","priority":"low"}
 {"id":"t40","subject":"Wrong number","body":"I got a message from this address about something I did not sign up for. I think it was sent to me by mistake.","category":"other","priority":"low"}
