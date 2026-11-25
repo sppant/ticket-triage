@@ -33,7 +33,24 @@ This is a short, factual account of how the repository was produced.
 
 Unit C's first version of the MCP keyword search matched substrings. A manual stdio smoke run showed that the query word "on" matched "subscription", returning noise. The agent changed matching to whole words after tokenising, dropped common stop-words, and added a test (`mcp/search.spec.ts`: "matches whole words only, so "on" does not match "subscription""). The unit tests written against the acceptance criteria had not caught it, because AC-M2 says "ranked by the number of query keywords found" without saying whether a keyword is a substring or a word; the spec should state this.
 
+## Retrieval (second iteration, branch `feat/rag`)
+
+Retrieval was added afterwards on its own branch, merged with a merge commit. This time there were no subagents: it was done in one session, in the same order as before.
+
+1. **Specs first:** a retrieval use case (UC11), features F17-F21 and acceptance criteria AC-K1..K8 were added; the MCP, eval and API criteria that change (AC-M*, AC-E1, AC-E7/E8, AC-A1, AC-W2) were rewritten in the same commit. The spec now says the MCP server may call the local embedding model, so "no network access" no longer holds for it.
+2. **Knowledge base:** 20 synthetic articles in `kb/`, and an `article` field added to each of the 40 dataset tickets by hand (each article is the expected hit for at least one ticket).
+3. **Code:** a `src/retrieval/` module (cosine similarity, keyword search, Ollama embedder, in-memory index with fallback), wired into the triage service; `runTriage` takes the retrieved articles as context; the fake provider mentions the first article so a test can see context reaching the model. The MCP tool `find_similar_tickets`, its dataset loader and its tests were deleted and replaced by `search_knowledge_base`. The old keyword search was moved into `src/retrieval/keyword.ts`.
+4. **Tests:** fixture-vector tests for similarity, top-3 ranking, fallback (no embedder, failed indexing, failed query embedding, index built on a later request); an e2e test for the keyword path and one for the embedding path with an injected knowledge base. Total tests went from 110 to 131. None need a model.
+
+What the real run showed, and what changed because of it:
+
+- The first full eval with retrieval gave category accuracy of 70.0% against 90.0% before retrieval. I added "choose category and priority from the ticket alone" to the prompt, which gave 75.0%. To separate the effect of the prompt from the effect of the articles I re-ran with an empty knowledge base directory (87.5%), so most of the drop comes from the articles, not the prompt wording. I stopped tuning there; the numbers and the caveats are in the README.
+- The retrieval hit rate came out at 100% (embedding) and 97.5% (keyword). Because the articles and labels were written together with the dataset, this is recorded in the README as an optimistic check, not a generalisation result.
+- A test I wrote for AC-K1 failed on its own email regex (it matched a trailing full stop); the regex was fixed, not the articles.
+- The unit C substring-matching bug described above no longer applies to the code, which was replaced; its whole-word rule and test were carried over into `src/retrieval/keyword.ts` and `keyword.spec.ts`.
+
 ## Not verified
 
 - The hosted (Anthropic) provider has only run against a mocked client: no API key was available. The hosted model was not evaluated.
+- Reply quality with retrieval is not measured: the eval only measures label accuracy and whether the expected article was retrieved.
 - The OTLP exporter path was checked once by the unit C agent against a local HTTP listener with a throwaway script, not in the test suite.
