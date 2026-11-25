@@ -1,10 +1,13 @@
 import { Global, Module } from '@nestjs/common';
-import { NoopTelemetry, Telemetry } from './telemetry';
+import { LoggerModule } from 'nestjs-pino';
+import { loggerParams } from './logging';
+import { Telemetry } from './telemetry';
+import { TelemetryService } from './telemetry.service';
 
-// Unit C replaces the NoopTelemetry binding with the OpenTelemetry implementation.
 @Global()
 @Module({
-  providers: [{ provide: Telemetry, useClass: NoopTelemetry }],
+  imports: [LoggerModule.forRoot(loggerParams())],
+  providers: [{ provide: Telemetry, useClass: TelemetryService }],
   exports: [Telemetry],
 })
 export class ObservabilityModule {}
