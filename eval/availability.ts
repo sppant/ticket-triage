@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434';
-export const DEFAULT_OLLAMA_MODEL = 'llama3.2:1b';
+export const DEFAULT_OLLAMA_MODEL = 'qwen2.5:1.5b';
 export const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-5-5';
 
 export type Availability = { available: true } | { available: false; reason: string };
