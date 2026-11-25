@@ -1,8 +1,0 @@
-{"id":"t1","subject":"Charged twice this month","body":"I was billed twice for my subscription. Please refund the duplicate invoice.","category":"billing","priority":"high"}
-{"id":"t2","subject":"App crashes on login","body":"The mobile app crashes immediately when I tap login. Reinstalling did not help.","category":"bug","priority":"high"}
-{"id":"t3","subject":"Dark mode request","body":"It would be great to have a dark mode option in the dashboard.","category":"feature_request","priority":"low"}
-{"id":"t4","subject":"Cannot reset password","body":"The password reset email never arrives, so I cannot log in to my account.","category":"account","priority":"medium"}
-{"id":"t5","subject":"Invoice address wrong","body":"Please update the billing address on my last invoice.","category":"billing","priority":"low"}
-{"id":"t6","subject":"Export fails with error","body":"Exporting the report to CSV fails with an error and the dashboard hangs.","category":"bug","priority":"medium"}
-{"id":"t7","subject":"Thanks for the help","body":"Just wanted to say the support team was great.","category":"other","priority":"low"}
-{"id":"t8","subject":"Login page slow","body":"Login takes ages and sometimes the app crashes afterwards.","category":"bug","priority":"medium"}

@@ -1,39 +1,39 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { loadDataset, resolveDatasetPath } from './dataset';
-import { DEFAULT_LIMIT, findSimilarTickets } from './search';
-import type { DatasetTicket } from './tickets';
+import { createKnowledgeBase } from '../src/retrieval/retrieval.module';
+import type { KnowledgeBase } from '../src/retrieval/retriever';
 
 /**
- * Read-only MCP server (AC-M4): it only reads the dataset file at startup and keeps it in
- * memory; it never writes files and makes no network calls.
+ * Read-only MCP server (AC-M4): it never writes files. It uses the same retrieval as the API:
+ * embeddings from the local Ollama model when available, keyword search otherwise.
  *
  * stdout is the protocol channel. Never write to stdout from this package; diagnostics go to
  * stderr.
  */
-export function createServer(tickets: readonly DatasetTicket[]): McpServer {
-  const server = new McpServer({ name: 'ticket-triage', version: '0.1.0' });
+export function createServer(kb: KnowledgeBase): McpServer {
+  const server = new McpServer({ name: 'ticket-triage', version: '0.2.0' });
 
   server.registerTool(
-    'find_similar_tickets',
+    'search_knowledge_base',
     {
-      title: 'Find similar tickets',
+      title: 'Search the knowledge base',
       description:
-        'Keyword search over the labeled support-ticket dataset. Returns up to 3 tickets ' +
-        '(id, subject, body, category, priority) ranked by how many query keywords they contain.',
-      inputSchema: { query: z.string().describe('Keywords describing the ticket to look for') },
+        'Searches the help-center articles. Returns up to 3 articles (id, title, text) ranked by ' +
+        'relevance, and the retrieval mode used ("embedding" or "keyword").',
+      inputSchema: { query: z.string().describe('What to look for, in plain words') },
       annotations: { readOnlyHint: true },
     },
-    ({ query }) => {
+    async ({ query }) => {
       if (!query.trim()) {
         return {
           isError: true,
           content: [{ type: 'text' as const, text: 'query must not be empty' }],
         };
       }
-      const results = findSimilarTickets(tickets, query, DEFAULT_LIMIT);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(results, null, 2) }] };
+      const { articles, mode } = await kb.retrieve(query);
+      const body = { retrieval: mode, results: articles };
+      return { content: [{ type: 'text' as const, text: JSON.stringify(body, null, 2) }] };
     },
   );
 
@@ -41,10 +41,12 @@ export function createServer(tickets: readonly DatasetTicket[]): McpServer {
 }
 
 async function main(): Promise<void> {
-  const file = resolveDatasetPath();
-  const tickets = loadDataset(file);
-  await createServer(tickets).connect(new StdioServerTransport());
-  process.stderr.write(`ticket-triage MCP server ready (${tickets.length} tickets from ${file})\n`);
+  const kb = createKnowledgeBase(process.env);
+  const ready = await kb.init();
+  await createServer(kb).connect(new StdioServerTransport());
+  process.stderr.write(
+    `ticket-triage MCP server ready (${kb.articles.length} articles, ${ready ? 'embedding' : 'keyword'} retrieval)\n`,
+  );
 }
 
 if (require.main === module) {
