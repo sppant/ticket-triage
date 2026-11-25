@@ -2,15 +2,15 @@
 
 Each use case is performed by one or more actors from [actors.md](actors.md).
 
-| ID   | Use case | Actors | Summary |
-| ---- | -------- | ------ | ------- |
-| UC1  | Triage a ticket over the API | A2 | Submit `{subject, body}`; receive category, priority, draft reply, the model used, and latency. |
-| UC2  | Route by data sensitivity | A2, A1 | A ticket containing personal data is only ever handled by the local model; other tickets use the hosted model when it is available. |
-| UC3  | Recover from bad model output | A2, A1 | If the model returns output that does not match the schema, the service retries once and then fails with a clear error instead of returning garbage. |
-| UC4  | Triage a ticket in the web UI | A1 | Fill in or pick an example ticket, submit, read the result, copy the draft reply, glance at recent results. |
-| UC5  | Understand the routing decision | A1, A4 | See which model answered and why the router chose it. |
-| UC6  | Evaluate models | A3 | Run every available provider over a labeled dataset and get accuracy, latency and cost figures. |
-| UC7  | Find similar tickets | A5 | Query the labeled dataset by keywords and get the three best matches. |
-| UC8  | Observe a request | A4 | Each request produces a trace (with a child span for the model call) and structured logs that contain no ticket content. |
-| UC9  | Read the API documentation | A2, A6 | Browse an OpenAPI description of the service. |
-| UC10 | Verify a change | A6 | Run lint, type check, tests and builds locally and in CI; tests never need network or a model. |
+| ID   | Use case                        | Actors | Summary                                                                                                                                              |
+| ---- | ------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UC1  | Triage a ticket over the API    | A2     | Submit `{subject, body}`; receive category, priority, draft reply, the model used, and latency.                                                      |
+| UC2  | Route by data sensitivity       | A2, A1 | A ticket containing personal data is only ever handled by the local model; other tickets use the hosted model when it is available.                  |
+| UC3  | Recover from bad model output   | A2, A1 | If the model returns output that does not match the schema, the service retries once and then fails with a clear error instead of returning garbage. |
+| UC4  | Triage a ticket in the web UI   | A1     | Fill in or pick an example ticket, submit, read the result, copy the draft reply, glance at recent results.                                          |
+| UC5  | Understand the routing decision | A1, A4 | See which model answered and why the router chose it.                                                                                                |
+| UC6  | Evaluate models                 | A3     | Run every available provider over a labeled dataset and get accuracy, latency and cost figures.                                                      |
+| UC7  | Find similar tickets            | A5     | Query the labeled dataset by keywords and get the three best matches.                                                                                |
+| UC8  | Observe a request               | A4     | Each request produces a trace (with a child span for the model call) and structured logs that contain no ticket content.                             |
+| UC9  | Read the API documentation      | A2, A6 | Browse an OpenAPI description of the service.                                                                                                        |
+| UC10 | Verify a change                 | A6     | Run lint, type check, tests and builds locally and in CI; tests never need network or a model.                                                       |
