@@ -13,6 +13,7 @@ import {
   Route,
   ShieldCheck,
   UserRound,
+  BookOpen,
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import type { Category, Priority, TriageResult } from '@/lib/api';
@@ -140,6 +141,28 @@ export function ResultCard({ result }: { result: TriageResult }) {
           </dt>
           <dd className="min-w-0 break-words font-medium" data-testid="route-reason">
             {result.route_reason}
+          </dd>
+        </div>
+        <div className="flex items-start gap-2.5">
+          <dt className="flex items-center gap-2 text-muted">
+            <BookOpen size={15} aria-hidden="true" />
+            <span>Sources</span>
+          </dt>
+          <dd className="min-w-0 font-medium" data-testid="sources">
+            {result.sources.length > 0 ? (
+              <ul className="m-0 list-none space-y-1 p-0">
+                {result.sources.map((title) => (
+                  <li key={title} className="break-words">
+                    {title}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <span className="font-normal text-muted">No matching articles</span>
+            )}
+            <span className="mt-1 block text-xs font-normal text-muted" data-testid="retrieval">
+              {result.retrieval === 'embedding' ? 'Semantic search' : 'Keyword search'}
+            </span>
           </dd>
         </div>
         <div className="flex items-start gap-2.5">
