@@ -51,4 +51,8 @@ export interface TriageResponse extends ModelOutput {
   latency_ms: number;
   provider: ProviderId;
   route_reason: string;
+  /** Titles of the help-center articles given to the model, best first (AC-K7). */
+  sources: string[];
+  /** How the articles were found: embedding similarity, or keyword fallback (AC-K5). */
+  retrieval: 'embedding' | 'keyword';
 }

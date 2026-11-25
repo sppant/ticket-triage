@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 import { setupDocs } from '../src/docs';
 import { FAKE_PROVIDER } from '../src/triage/triage.module';
 import type { ModelProvider } from '../src/contracts';
+import { KnowledgeBase } from '../src/retrieval/retriever';
 
 async function createApp(override?: ModelProvider): Promise<INestApplication> {
   let builder = Test.createTestingModule({ imports: [AppModule] });
@@ -43,7 +44,9 @@ describe('POST /triage (e2e, fake provider)', () => {
         'model',
         'priority',
         'provider',
+        'retrieval',
         'route_reason',
+        'sources',
       ].sort(),
     );
     expect(res.body).toMatchObject({
@@ -55,6 +58,28 @@ describe('POST /triage (e2e, fake provider)', () => {
     });
     expect(res.body.draft_reply.length).toBeGreaterThan(0);
     expect(res.body.latency_ms).toBeGreaterThanOrEqual(0);
+  });
+
+  it('AC-K5/K6/K7 fake mode retrieves by keyword and the articles reach the model', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/triage')
+      .send({ subject: 'Double charge', body: 'I was charged twice, please refund the duplicate.' })
+      .expect(200);
+    expect(res.body.retrieval).toBe('keyword');
+    expect(res.body.sources).toEqual(
+      expect.arrayContaining(['Duplicate charges and failed payments']),
+    );
+    expect(res.body.sources.length).toBeLessThanOrEqual(3);
+    // The fake provider mentions the first article it was given.
+    expect(res.body.draft_reply).toContain(`See: ${res.body.sources[0]}.`);
+  });
+
+  it('AC-K5 returns empty sources when no article matches', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/triage')
+      .send({ subject: 'zzzz', body: 'qqqq xxxx' })
+      .expect(200);
+    expect(res.body).toMatchObject({ sources: [], retrieval: 'keyword' });
   });
 
   it.each([
@@ -107,6 +132,44 @@ describe('POST /triage failure paths (e2e)', () => {
       .send({ subject: 's', body: 'b' })
       .expect(502);
     expect(JSON.stringify(res.body)).not.toContain('SENTINEL');
+    await app.close();
+  });
+});
+
+describe('POST /triage (e2e, embedding retrieval)', () => {
+  const prev = process.env.TRIAGE_PROVIDER;
+  afterAll(() => {
+    if (prev === undefined) delete process.env.TRIAGE_PROVIDER;
+    else process.env.TRIAGE_PROVIDER = prev;
+  });
+
+  it('AC-K3/K7 reports retrieval "embedding" and the top-ranked titles', async () => {
+    process.env.TRIAGE_PROVIDER = 'fake';
+    const articles = [
+      { id: 'one', title: 'First article', text: 'alpha' },
+      { id: 'two', title: 'Second article', text: 'beta' },
+    ];
+    // Document vectors are 2-d unit vectors; the query points at "Second article".
+    const embedder = {
+      embedDocuments: async () => [
+        [1, 0],
+        [0, 1],
+      ],
+      embedQuery: async () => [0.1, 0.9],
+    };
+    const kb = new KnowledgeBase(articles, embedder);
+    await kb.init();
+    const builder = Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(KnowledgeBase)
+      .useValue(kb);
+    const app = (await builder.compile()).createNestApplication();
+    await app.init();
+    const res = await request(app.getHttpServer())
+      .post('/triage')
+      .send({ subject: 'anything', body: 'any text' })
+      .expect(200);
+    expect(res.body.retrieval).toBe('embedding');
+    expect(res.body.sources).toEqual(['Second article', 'First article']);
     await app.close();
   });
 });

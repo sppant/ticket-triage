@@ -8,6 +8,7 @@ import {
   type ModelProvider,
   type Ticket,
 } from '../contracts';
+import type { KbArticle } from '../retrieval/kb';
 
 /** The model answered twice without producing a valid result (AC-V3). Never carries ticket text. */
 export class InvalidModelOutputError extends Error {
@@ -22,6 +23,7 @@ Classify the ticket and write a short, polite draft reply to the customer.
 category must be one of: ${CATEGORIES.join(', ')}.
 priority must be one of: ${PRIORITIES.join(', ')}.
 Priority guide: high = the customer is blocked, an outage, data loss, or money was wrongly taken; low = a general question or a nice-to-have with no deadline; medium = everything else.
+If help-center articles are provided, base the reply on them, point the customer to the relevant steps, and do not invent policies that are not in the articles. If none apply, reply generally.
 Answer ONLY with a JSON object of the form {"category": "...", "priority": "...", "draft_reply": "..."} and nothing else.
 
 Example:
@@ -30,10 +32,17 @@ Subject: Charged twice
 Body: I was charged twice for my March invoice, please refund one payment.
 Answer: {"category": "billing", "priority": "medium", "draft_reply": "Sorry about the double charge. We are checking your March invoice and will refund the extra payment."}`;
 
-export function buildPrompt(ticket: Ticket): CompletionRequest {
+/** Renders the retrieved articles as numbered context blocks (AC-K6); empty for no context. */
+function renderContext(context: readonly KbArticle[]): string {
+  if (context.length === 0) return '';
+  const blocks = context.map((a, i) => `[${i + 1}] ${a.title}\n${a.text}`);
+  return `Help-center articles:\n${blocks.join('\n\n')}\n\n`;
+}
+
+export function buildPrompt(ticket: Ticket, context: readonly KbArticle[] = []): CompletionRequest {
   return {
     system: SYSTEM_PROMPT,
-    user: `Ticket:\nSubject: ${ticket.subject}\nBody: ${ticket.body}\nAnswer:`,
+    user: `${renderContext(context)}Ticket:\nSubject: ${ticket.subject}\nBody: ${ticket.body}\nAnswer:`,
   };
 }
 
@@ -71,8 +80,12 @@ export interface TriageRun {
 }
 
 /** Calls the provider, validates the output, retries exactly once on invalid output (AC-V2). */
-export async function runTriage(provider: ModelProvider, ticket: Ticket): Promise<TriageRun> {
-  const request = buildPrompt(ticket);
+export async function runTriage(
+  provider: ModelProvider,
+  ticket: Ticket,
+  context: readonly KbArticle[] = [],
+): Promise<TriageRun> {
+  const request = buildPrompt(ticket, context);
   let inputTokens: number | undefined;
   let outputTokens: number | undefined;
   for (const attempts of [1, 2] as const) {
