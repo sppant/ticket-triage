@@ -1,6 +1,16 @@
 import type { INestApplication } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-/** Unit A: mount Swagger UI at /docs and the JSON document at /docs-json. */
-export function setupDocs(_app: INestApplication): void {
-  // implemented in unit A
+/** Mounts Swagger UI at /docs and the OpenAPI JSON at /docs-json (AC-A4). */
+export function setupDocs(app: INestApplication): void {
+  const config = new DocumentBuilder()
+    .setTitle('ticket-triage')
+    .setDescription(
+      'Classifies support tickets and drafts replies, routing between local and hosted models.',
+    )
+    .setVersion('0.1.0')
+    .build();
+  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config), {
+    jsonDocumentUrl: 'docs-json',
+  });
 }
