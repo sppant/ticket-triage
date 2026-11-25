@@ -1,4 +1,5 @@
 import { CATEGORIES, PRIORITIES } from '../src/contracts';
+import { detectPii } from '../src/pii/pii';
 import { loadDataset, parseDataset } from './dataset';
 
 describe('dataset.jsonl (AC-E1, AC-E2)', () => {
@@ -40,10 +41,8 @@ describe('dataset.jsonl (AC-E1, AC-E2)', () => {
   });
 
   it('contains at least 5 tickets with personal data', () => {
-    // TODO(integration): replace these regexes with the real detectPii from src.
-    const pii =
-      /[\w.+-]+@example\.(com|org)|\+1 555 010 \d{4}|\(555\) 010-\d{4}|\b(?:\d{4} ){3}\d{4}\b/;
-    expect(tickets.filter((t) => pii.test(text(t))).length).toBeGreaterThanOrEqual(5);
+    const withPii = tickets.filter((t) => detectPii(text(t)).hasPii);
+    expect(withPii.length).toBeGreaterThanOrEqual(5);
   });
 
   it('keeps bodies short (1-4 sentences)', () => {
