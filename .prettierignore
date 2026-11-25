@@ -7,3 +7,5 @@ web/storybook-static
 package-lock.json
 web/package-lock.json
 eval/dataset.jsonl
+eval/results.md
+web/next-env.d.ts

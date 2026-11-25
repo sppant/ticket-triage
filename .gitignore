@@ -12,3 +12,5 @@ web/storybook-static/
 web/test-results/
 web/playwright-report/
 .claude/
+web/AGENTS.md
+web/CLAUDE.md
