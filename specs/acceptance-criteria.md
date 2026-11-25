@@ -48,7 +48,7 @@ Vocabulary: **PII** = personal data as defined in AC-P*. **Local** = Ollama prov
 ## MCP server (F10)
 
 - **AC-M1** The server speaks MCP over stdio and lists exactly one tool, `find_similar_tickets`, with a `query` string parameter.
-- **AC-M2** The tool returns at most 3 tickets, ranked by the number of query keywords found in subject and body; ties break by dataset order. Each result has `id`, `subject`, `body`, `category`, `priority`.
+- **AC-M2** The tool returns at most 3 tickets, ranked by the number of distinct query keywords found as whole words in subject and body (lowercased; one-letter words and common stop-words are not keywords); ties break by dataset order. Each result has `id`, `subject`, `body`, `category`, `priority`.
 - **AC-M3** A query with no matching keyword returns an empty list, not an error. An empty query returns an error result.
 - **AC-M4** The server is read-only: it never writes files or calls the network.
 
